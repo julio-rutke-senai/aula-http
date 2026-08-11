@@ -1,5 +1,11 @@
 package org.example.crud;
 
+import org.example.tier.controller.ProdutoController;
+import org.example.tier.controller.dto.ProdutoResponseDTO;
+import org.example.tier.model.Produto;
+import org.example.tier.service.PedidoService;
+import org.example.tier.service.ProdutoService;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,48 +20,15 @@ import java.util.regex.Pattern;
 public class ProdutoCrudServerMain {
 
     public static void main(String[] args) throws IOException {
-        record Produto(
-                long id,
-                String nome,
-                double preco,
-                int estoque
-        ) {
-            String toJson() {
-                return String.format(
-                        Locale.US,
-                        """
-                        {"id":%d,"nome":"%s","preco":%.2f,"estoque":%d}
-                        """,
-                        id,
-                        nome,
-                        preco,
-                        estoque
-                ).trim();
-            }
-        }
 
-        List<Produto> produtos = new ArrayList<>();
+        ProdutoService produtoService = new ProdutoService();
+        PedidoService pedidoService =  new PedidoService(produtoService);
+        ProdutoController produtoController = new ProdutoController(produtoService);
 
-        produtos.add(
-                new Produto(1, "Teclado", 150.00, 10)
-        );
+        produtoService.cadastrar(new Produto("Teclado", 150.00, 10));
 
-        produtos.add(
-                new Produto(2, "Mouse", 80.00, 20)
-        );
-
-        long proximoId = 3;
-
-        Pattern nomePattern = Pattern.compile(
-                "\"nome\"\\s*:\\s*\"([^\"]+)\""
-        );
-
-        Pattern precoPattern = Pattern.compile(
-                "\"preco\"\\s*:\\s*(\\d+(?:\\.\\d+)?)"
-        );
-
-        Pattern estoquePattern = Pattern.compile(
-                "\"estoque\"\\s*:\\s*(\\d+)"
+        produtoService.cadastrar(
+                new Produto("Mouse", 80.00, 20)
         );
 
         try (ServerSocket server = new ServerSocket(8080)) {
@@ -105,7 +78,6 @@ public class ProdutoCrudServerMain {
                     }
 
                     String method = requestParts[0];
-
                     String requestTarget = requestParts[1];
 
                     String path = requestTarget.split("\\?", 2)[0];
@@ -151,231 +123,13 @@ public class ProdutoCrudServerMain {
 
                     int status = 200;
                     String reasonPhrase = "OK";
-                    String responseBody;
+                    String responseBody = "";
 
-                    if (method.equals("GET") && path.equals("/produtos")) {
-
-                        responseBody = produtos.stream()
-                                .map(Produto::toJson)
-                                .reduce(
-                                        (left, right) ->
-                                                left + "," + right
-                                )
-                                .map(json -> "[" + json + "]")
-                                .orElse("[]");
-
-                    } else if (method.equals("GET") && path.matches("/produtos/\\d+")) {
-                        long id = Long.parseLong(
-                                path.substring(
-                                        "/produtos/".length()
-                                )
-                        );
-
-                        Produto encontrado = produtos.stream()
-                                .filter(
-                                        produto ->
-                                                produto.id() == id
-                                )
-                                .findFirst()
-                                .orElse(null);
-
-                        if (encontrado == null) {
-                            status = 404;
-                            reasonPhrase = "Not Found";
-
-                            responseBody =
-                                    """
-                                    {"erro":"Produto não encontrado"}
-                                    """.trim();
-
-                        } else {
-                            responseBody =
-                                    encontrado.toJson();
-                        }
-
-                    } else if (method.equals("POST") && path.equals("/produtos")) {
-
-                        Matcher nomeMatcher =
-                                nomePattern.matcher(requestBody);
-
-                        Matcher precoMatcher =
-                                precoPattern.matcher(requestBody);
-
-                        Matcher estoqueMatcher =
-                                estoquePattern.matcher(requestBody);
-
-                        boolean possuiNome =
-                                nomeMatcher.find();
-
-                        boolean possuiPreco =
-                                precoMatcher.find();
-
-                        boolean possuiEstoque =
-                                estoqueMatcher.find();
-
-                        if (!possuiNome || !possuiPreco || !possuiEstoque) {
-
-                            status = 400;
-                            reasonPhrase = "Bad Request";
-
-                            responseBody =
-                                    """
-                                    {"erro":"Informe nome, preco e estoque"}
-                                    """.trim();
-                        } else {
-                            Produto novoProduto =
-                                    new Produto(
-                                            proximoId++,
-                                            nomeMatcher.group(1),
-                                            Double.parseDouble(
-                                                    precoMatcher.group(1)
-                                            ),
-                                            Integer.parseInt(
-                                                    estoqueMatcher.group(1)
-                                            )
-                                    );
-
-                            produtos.add(novoProduto);
-
-                            status = 201;
-                            reasonPhrase = "Created";
-                            responseBody =
-                                    novoProduto.toJson();
-                        }
-
-                    } else if (
-                            method.equals("PUT")
-                                    && path.matches("/produtos/\\d+")
-                    ) {
-                        long id = Long.parseLong(
-                                path.substring(
-                                        "/produtos/".length()
-                                )
-                        );
-
-                        int index = -1;
-
-                        for (
-                                int i = 0;
-                                i < produtos.size();
-                                i++
-                        ) {
-
-                            if (produtos.get(i).id() == id) {
-                                index = i;
-                                break;
-                            }
-                        }
-
-                        Matcher nomeMatcher =
-                                nomePattern.matcher(requestBody);
-
-                        Matcher precoMatcher =
-                                precoPattern.matcher(requestBody);
-
-                        Matcher estoqueMatcher =
-                                estoquePattern.matcher(requestBody);
-
-                        boolean possuiNome =
-                                nomeMatcher.find();
-
-                        boolean possuiPreco =
-                                precoMatcher.find();
-
-                        boolean possuiEstoque =
-                                estoqueMatcher.find();
-
-                        if (index < 0) {
-
-                            status = 404;
-                            reasonPhrase = "Not Found";
-
-                            responseBody =
-                                    """
-                                    {"erro":"Produto não encontrado"}
-                                    """.trim();
-
-                        } else if (!possuiNome || !possuiPreco || !possuiEstoque) {
-
-                            status = 400;
-                            reasonPhrase = "Bad Request";
-
-                            responseBody =
-                                    """
-                                    {"erro":"Informe nome, preco e estoque"}
-                                    """.trim();
-
-                        } else {
-
-                            Produto atualizado =
-                                    new Produto(
-                                            id,
-                                            nomeMatcher.group(1),
-                                            Double.parseDouble(
-                                                    precoMatcher.group(1)
-                                            ),
-                                            Integer.parseInt(
-                                                    estoqueMatcher.group(1)
-                                            )
-                                    );
-
-                            produtos.set(index, atualizado);
-
-                            responseBody =
-                                    atualizado.toJson();
-                        }
-
-                    } else if (method.equals("DELETE") && path.matches("/produtos/\\d+")) {
-
-                        long id = Long.parseLong(
-                                path.substring(
-                                        "/produtos/".length()
-                                )
-                        );
-
-                        boolean removido = produtos.removeIf(
-                                produto -> produto.id() == id
-                        );
-
-                        if (removido) {
-
-                            status = 204;
-                            reasonPhrase = "No Content";
-                            responseBody = "";
-
-                        } else {
-
-                            status = 404;
-                            reasonPhrase = "Not Found";
-
-                            responseBody =
-                                    """
-                                    {"erro":"Produto não encontrado"}
-                                    """.trim();
-                        }
-
-                    } else if (
-                            path.equals("/produtos") || path.startsWith("/produtos/")
-                    ) {
-
-                        status = 405;
-                        reasonPhrase =
-                                "Method Not Allowed";
-
-                        responseBody =
-                                """
-                                {"erro":"Método não permitido"}
-                                """.trim();
-
-                    } else {
-
-                        status = 404;
-                        reasonPhrase = "Not Found";
-
-                        responseBody =
-                                """
-                                {"erro":"Caminho não encontrado"}
-                                """.trim();
+                    if(path.equals("/produtos")) {
+                        ProdutoResponseDTO handler = produtoController.handler(method, path, requestBody);
+                        status = handler.getStatus();
+                        reasonPhrase = handler.getReasonPhrase();
+                        responseBody = handler.getResponseBody();
                     }
 
                     enviarResposta(
