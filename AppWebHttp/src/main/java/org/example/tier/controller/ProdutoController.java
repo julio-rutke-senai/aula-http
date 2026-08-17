@@ -4,8 +4,6 @@ import org.example.tier.controller.dto.ProdutoResponseDTO;
 import org.example.tier.model.Produto;
 import org.example.tier.service.ProdutoService;
 
-import java.util.regex.Matcher;
-
 public class ProdutoController {
 
     public ProdutoService produtoService;
@@ -69,77 +67,9 @@ public class ProdutoController {
                     )
             );
 
-            int index = -1;
+            ProdutoResponseDTO produtoResponseDTO = this.atualizar(id, requestBody);
 
-            for (
-                    int i = 0;
-                    i < produtos.size();
-                    i++
-            ) {
-
-                if (produtos.get(i).id() == id) {
-                    index = i;
-                    break;
-                }
-            }
-
-            Matcher nomeMatcher =
-                    nomePattern.matcher(requestBody);
-
-            Matcher precoMatcher =
-                    precoPattern.matcher(requestBody);
-
-            Matcher estoqueMatcher =
-                    estoquePattern.matcher(requestBody);
-
-            boolean possuiNome =
-                    nomeMatcher.find();
-
-            boolean possuiPreco =
-                    precoMatcher.find();
-
-            boolean possuiEstoque =
-                    estoqueMatcher.find();
-
-            if (index < 0) {
-
-                status = 404;
-                reasonPhrase = "Not Found";
-
-                responseBody =
-                        """
-                        {"erro":"Produto não encontrado"}
-                        """.trim();
-
-            } else if (!possuiNome || !possuiPreco || !possuiEstoque) {
-
-                status = 400;
-                reasonPhrase = "Bad Request";
-
-                responseBody =
-                        """
-                        {"erro":"Informe nome, preco e estoque"}
-                        """.trim();
-
-            } else {
-
-                Produto atualizado =
-                        new Produto(
-                                id,
-                                nomeMatcher.group(1),
-                                Double.parseDouble(
-                                        precoMatcher.group(1)
-                                ),
-                                Integer.parseInt(
-                                        estoqueMatcher.group(1)
-                                )
-                        );
-
-                produtos.set(index, atualizado);
-
-                responseBody =
-                        atualizado.toJson();
-            }
+            return produtoResponseDTO;
 
         } else if (method.equals("DELETE") && path.matches("/produtos/\\d+")) {
 
@@ -149,51 +79,44 @@ public class ProdutoController {
                     )
             );
 
-            boolean removido = produtos.removeIf(
-                    produto -> produto.id() == id
-            );
+            ProdutoResponseDTO produtoResponseDTO = this.excluir(id, requestBody);
 
-            if (removido) {
-
-                status = 204;
-                reasonPhrase = "No Content";
-                responseBody = "";
-
-            } else {
-
-                status = 404;
-                reasonPhrase = "Not Found";
-
-                responseBody =
-                        """
-                        {"erro":"Produto não encontrado"}
-                        """.trim();
-            }
+            return produtoResponseDTO;
 
         } else if (
                 path.equals("/produtos") || path.startsWith("/produtos/")
         ) {
 
-            status = 405;
-            reasonPhrase =
-                    "Method Not Allowed";
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
 
-            responseBody =
-                    """
+            produtoResponseDTO.setStatus(405);
+            produtoResponseDTO.setReasonPhrase("Method Not Allowed");
+            produtoResponseDTO.setResponseBody("""
                     {"erro":"Método não permitido"}
-                    """.trim();
+                    """.trim());
+            return produtoResponseDTO;
 
         } else {
 
-            status = 404;
-            reasonPhrase = "Not Found";
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
 
-            responseBody =
-                    """
+            produtoResponseDTO.setStatus(404);
+            produtoResponseDTO.setReasonPhrase("Not Found");
+            produtoResponseDTO.setResponseBody("""
                     {"erro":"Caminho não encontrado"}
-                    """.trim();
+                    """.trim());
+
+            return produtoResponseDTO;
         }
 
+    }
+
+    private ProdutoResponseDTO excluir(long id, String requestBody) {
+        return produtoService.excluir(id, requestBody);
+    }
+
+    private ProdutoResponseDTO atualizar(long id, String requestBody) {
+        return produtoService.atualizar(id, requestBody);
     }
 
 }

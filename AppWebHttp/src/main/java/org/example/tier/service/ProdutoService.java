@@ -108,4 +108,118 @@ public class ProdutoService {
         }
     }
 
+    public ProdutoResponseDTO atualizar(long id, String requestBody){
+
+        List<Produto> produtos = produtoRepository.getProdutos();
+
+        int index = -1;
+
+        for (
+                int i = 0;
+                i < produtos.size();
+                i++
+        ) {
+
+            if (produtos.get(i).getId() == id) {
+                index = i;
+                break;
+            }
+        }
+
+        Matcher nomeMatcher =
+                nomePattern.matcher(requestBody);
+
+        Matcher precoMatcher =
+                precoPattern.matcher(requestBody);
+
+        Matcher estoqueMatcher =
+                estoquePattern.matcher(requestBody);
+
+        boolean possuiNome =
+                nomeMatcher.find();
+
+        boolean possuiPreco =
+                precoMatcher.find();
+
+        boolean possuiEstoque =
+                estoqueMatcher.find();
+
+        if (index < 0) {
+
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
+            produtoResponseDTO.setStatus(404);
+            produtoResponseDTO.setReasonPhrase("Not Found");
+            produtoResponseDTO.setResponseBody("""
+                    {"erro":"Produto não encontrado"}
+                    """.trim());
+
+            return produtoResponseDTO;
+
+        } else if (!possuiNome || !possuiPreco || !possuiEstoque) {
+
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
+            produtoResponseDTO.setStatus(400);
+            produtoResponseDTO.setReasonPhrase("Bad Request");
+            produtoResponseDTO.setResponseBody("""
+                    {"erro":"Informe nome, preco e estoque"}
+                    """.trim());
+
+            return produtoResponseDTO;
+
+        } else {
+
+            Produto atualizado =
+                    new Produto(
+                            id,
+                            nomeMatcher.group(1),
+                            Double.parseDouble(
+                                    precoMatcher.group(1)
+                            ),
+                            Integer.parseInt(
+                                    estoqueMatcher.group(1)
+                            )
+                    );
+
+            produtos.set(index, atualizado);
+
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
+            produtoResponseDTO.setStatus(200);
+            produtoResponseDTO.setReasonPhrase("OK");
+            produtoResponseDTO.setResponseBody(atualizado.toJson());
+
+            return produtoResponseDTO;
+        }
+
+    }
+
+    public ProdutoResponseDTO excluir(long id, String requestBody) {
+
+        List<Produto> produtos = produtoRepository.getProdutos();
+
+        boolean removido = produtos.removeIf(
+                produto -> produto.getId() == id
+        );
+
+        if (removido) {
+
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
+            produtoResponseDTO.setStatus(204);
+            produtoResponseDTO.setReasonPhrase("No Content");
+            produtoResponseDTO.setResponseBody("");
+
+            return produtoResponseDTO;
+
+        } else {
+
+            ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
+            produtoResponseDTO.setStatus(404);
+            produtoResponseDTO.setReasonPhrase("Not Found");
+            produtoResponseDTO.setResponseBody("""
+                    {"erro":"Produto não encontrado"}
+                    """.trim());
+
+            return produtoResponseDTO;
+        }
+
+    }
 }
