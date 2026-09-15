@@ -1,11 +1,21 @@
 package br.com.unisenaisc.cadastro_produtos.model;
 
+import jakarta.persistence.*;
+
+import java.util.List;
+
+@Entity
 public class Cliente {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
     private String email;
     private String fone;
+
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
+    private List<Venda> vendas;
 
     public Long getId() {
         return id;

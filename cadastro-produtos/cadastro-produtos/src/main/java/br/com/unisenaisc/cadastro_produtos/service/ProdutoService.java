@@ -4,6 +4,8 @@ import br.com.unisenaisc.cadastro_produtos.controller.dto.ProdutoRequestDTO;
 import br.com.unisenaisc.cadastro_produtos.controller.dto.ProdutoResponseDTO;
 import br.com.unisenaisc.cadastro_produtos.model.Produto;
 import br.com.unisenaisc.cadastro_produtos.repository.ProdutoRepository;
+import br.com.unisenaisc.cadastro_produtos.repository.ProdutoRepositoryManual;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -34,7 +36,7 @@ public class ProdutoService {
     }
 
     public void cadastrar(Produto produto){
-        produtoRepository.addProduto(produto);
+        produtoRepository.save(produto);
     }
 
     public ProdutoResponseDTO cadastrar(ProdutoRequestDTO produtoDTO){
@@ -51,9 +53,9 @@ public class ProdutoService {
             return produtoResponseDTO;
 
         } else {
-            Produto produto = produtoRepository.addProduto(produtoDTO.getNome(),
+            Produto produto = produtoRepository.save(new Produto(produtoDTO.getNome(),
                     BigDecimal.valueOf(produtoDTO.getPreco()),
-                    produtoDTO.getEstoque());
+                    produtoDTO.getEstoque()));
             ProdutoResponseDTO produtoResponseDTO = new ProdutoResponseDTO();
             produtoResponseDTO.setStatus(201);
             produtoResponseDTO.setReasonPhrase("Created");
@@ -65,7 +67,7 @@ public class ProdutoService {
     }
 
     public List<Produto> listarProdutos(){
-        return produtoRepository.getProdutos();
+        return produtoRepository.findAll();
     }
 
     public ProdutoResponseDTO buscarPorId(long id){
@@ -98,7 +100,7 @@ public class ProdutoService {
 
     public ProdutoResponseDTO atualizar(long id, String requestBody){
 
-        List<Produto> produtos = produtoRepository.getProdutos();
+        List<Produto> produtos = produtoRepository.findAll();
 
         int index = -1;
 
@@ -180,7 +182,7 @@ public class ProdutoService {
 
     public ProdutoResponseDTO excluir(long id, String requestBody) {
 
-        List<Produto> produtos = produtoRepository.getProdutos();
+        List<Produto> produtos = produtoRepository.findAll();
 
         boolean removido = produtos.removeIf(
                 produto -> produto.getId() == id
@@ -207,5 +209,9 @@ public class ProdutoService {
             return produtoResponseDTO;
         }
 
+    }
+
+    public List<Produto> buscarProdutoPorNome(String nome, Pageable pageable){
+        return produtoRepository.findByNome(pageable, nome);
     }
 }
