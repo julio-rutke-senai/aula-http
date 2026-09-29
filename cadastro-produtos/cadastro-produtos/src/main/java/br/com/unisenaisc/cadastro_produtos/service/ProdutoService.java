@@ -212,6 +212,6 @@ public class ProdutoService {
     }
 
     public List<Produto> buscarProdutoPorNome(String nome, Pageable pageable){
-        return produtoRepository.findByNome(pageable, nome);
+        return produtoRepository.findByNome(pageable, nome).stream().toList();
     }
 }
