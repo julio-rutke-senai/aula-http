@@ -2,6 +2,7 @@ package br.com.unisenaisc.cadastro_produtos.config;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,11 +10,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class JWTValidateFilter extends BasicAuthenticationFilter {
@@ -56,9 +60,12 @@ public class JWTValidateFilter extends BasicAuthenticationFilter {
                 .build().verify(token);
 
         String usuario = decodedJWT.getSubject();
+        String permissao = decodedJWT.getClaim("permissao").asString();
 
-        if (Optional.ofNullable(usuario).isPresent())
-            return new UsernamePasswordAuthenticationToken(usuario, null, new ArrayList());
+        if (Optional.ofNullable(usuario).isPresent()) {
+            List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(permissao));
+            return new UsernamePasswordAuthenticationToken(usuario, null, authorities);
+        }
 
         return null;
     }

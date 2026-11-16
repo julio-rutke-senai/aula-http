@@ -19,8 +19,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain
-            securityFilterChain(HttpSecurity httpSecurity,
-                                AuthenticationManager authenticationManager)
+            securityFilterChain(HttpSecurity httpSecurity, AuthenticationManager authenticationManager)
             throws Exception{
         return httpSecurity.csrf(csrf -> csrf.disable())
                 .sessionManagement(
@@ -28,12 +27,13 @@ public class SecurityConfig {
                                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         authorizeConfig -> {
+                            authorizeConfig.requestMatchers(HttpMethod.POST,"/usuario/add").hasAuthority("ADMIN");
                             authorizeConfig.requestMatchers(HttpMethod.POST,"/login").permitAll();
                             authorizeConfig.anyRequest().authenticated();
                         }
                 )
-//                .addFilter(new JWTAuthenticationFilter(authenticationManager))
-//                .addFilter(new JWTValidateFilter(authenticationManager))
+                .addFilter(new JWTAuthenticationFilter(authenticationManager))
+                .addFilter(new JWTValidateFilter(authenticationManager))
                 .build();
     }
 

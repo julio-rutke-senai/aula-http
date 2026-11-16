@@ -11,12 +11,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
@@ -56,8 +60,8 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String token = JWT.create()
                 .withSubject(userDetailsCustom.getUsername())
                 .withExpiresAt(new Date(System.currentTimeMillis()+600000))
-                .withClaim("codigo", 9)
-                .withClaim("permissao", "ADMIN")
+                .withClaim("codigo", userDetailsCustom.getCodigo())
+                .withClaim("permissao", userDetailsCustom.getRole())
                 .sign(Algorithm.HMAC256(SECRET_JWT));
 
         response.getWriter().write(token);

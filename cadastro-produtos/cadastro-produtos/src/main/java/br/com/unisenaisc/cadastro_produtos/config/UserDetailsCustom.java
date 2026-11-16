@@ -5,6 +5,7 @@ import br.com.unisenaisc.cadastro_produtos.model.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,6 +26,14 @@ public class UserDetailsCustom implements UserDetails {
         Set<GrantedAuthority> authorities = new HashSet();
         authorities.add(authority);
         return authorities;
+    }
+
+    public Long getCodigo(){
+        return usuario.get().getId();
+    }
+
+    public String getRole(){
+        return usuario.get().getRole();
     }
 
     @Override
